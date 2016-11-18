@@ -18,6 +18,7 @@ public class Beat
 
 public class ButtonPool
 {
+    const int MAX_BUTTONS = 1000;
     int steps;
     List<BeatButton> buttons;
     RectTransform template;
@@ -26,6 +27,7 @@ public class ButtonPool
     {
         buttons = new List<BeatButton>();
         steps = 100;
+        template = _template;
     }
 
     BeatButton NewButton()
@@ -41,6 +43,12 @@ public class ButtonPool
 
     BeatButton AddButtons(int count)
     {
+        if (buttons.Count + count > MAX_BUTTONS)
+        {
+            Debug.LogError("MAX BUTTONS REACHED");
+            return null;
+        }
+
         BeatButton firstOne = null;
         int startID = buttons.Count;
         for (int i = startID; i < startID + count; i ++)

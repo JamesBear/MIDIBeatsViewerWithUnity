@@ -567,7 +567,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   console: {fileID: 493041781}
   grid: {fileID: 1667525835}
-  buttonPrefab: {fileID: 1000014263570542, guid: 523e8835f89e50f4686c2200f696d5a2,
+  buttonPrefab: {fileID: 224000011202998084, guid: 523e8835f89e50f4686c2200f696d5a2,
     type: 2}
   scrollBar: {fileID: 876456061}
 --- !u!4 &657927244

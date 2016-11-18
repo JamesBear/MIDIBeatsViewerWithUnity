@@ -10,7 +10,7 @@ public class Test : MonoBehaviour {
 
     public Text console;
     public RectTransform grid;
-    public GameObject buttonPrefab;
+    public RectTransform buttonPrefab;
     public Scrollbar scrollBar;
 
     float ticksPerSecond = 1f;
@@ -18,8 +18,10 @@ public class Test : MonoBehaviour {
     MidiFile midiFile;
     List<Beat> beats = new List<Beat>();
     float tickToPixelRatio = 1f;
-    
-    
+    ButtonPool buttonPool;
+    Dictionary<int, BeatButton> shownButtons;
+    int shownStart;
+    int shownCount;
 
 	// Use this for initialization
 	void Start () {
@@ -28,7 +30,8 @@ public class Test : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-	    
+        if (buttonPool != null)
+            ShowButtons(scrollBar.value);
 	}
 
     string AskForFileName()
@@ -87,6 +90,8 @@ public class Test : MonoBehaviour {
 
     void SetupUI()
     {
+        shownButtons = new Dictionary<int, BeatButton>();
+        buttonPool = new ButtonPool(buttonPrefab);
         tickToPixelRatio = 1f;
         var size = grid.sizeDelta;
         size.x = beats[beats.Count - 1].Time / tickToPixelRatio;
@@ -97,9 +102,79 @@ public class Test : MonoBehaviour {
         grid.parent.GetComponent<RectTransform>();
     }
 
+    void GetShowWindow(float scrollBarValue, out int window_start, out int window_length)
+    {
+        window_start = -1;
+        window_length = 0;
+
+        
+        float shownLength = grid.transform.parent.GetComponent<RectTransform>().sizeDelta.x * tickToPixelRatio;
+        float shownBegin = (grid.sizeDelta.x - shownLength) * scrollBarValue * tickToPixelRatio;
+        Debug.Log(string.Format("shownLength = {0}, grid.sizeDelta.x = {1}, showBegin = {2}", shownLength, grid.sizeDelta.x, shownBegin));
+        
+        for (int i = 0; i < beats.Count; i ++)
+        {
+            var beat = beats[i];
+            if (beat.Time >= shownBegin && beat.Time <= shownBegin + shownLength)
+            {
+                if (window_start == -1)
+                {
+                    window_start = i;
+                }
+                window_length++;
+            }
+        }
+
+        Debug.Log(string.Format("window start = {0}, window length = {1}", window_start, window_length));
+    }
+
+    int Min(int a, int b)
+    {
+        return (a > b) ? b : a;
+    }
+    int Max(int a, int b)
+    {
+        return (a > b) ? a : b;
+    }
+
+    void ShowButton(BeatButton button)
+    {
+        button.transform.parent = grid.transform.parent;
+        var beat = beats[button.beatIndex];
+        var trans = button.GetComponent<RectTransform>();
+        var pos = buttonPrefab.position;
+        var size = buttonPrefab.sizeDelta;
+        pos.x = beat.Time / tickToPixelRatio;
+        trans.position = pos;
+        trans.sizeDelta = size;
+        trans.gameObject.SetActive(true);
+    }
+
     void ShowButtons(float scrollBarValue)
     {
+        int window_start, window_length;
+        GetShowWindow(scrollBarValue, out window_start, out window_length);
+        for (int i = Min(shownStart, window_start); i < Max(shownStart+shownCount, window_start+window_length); i ++ )
+        {
+            if (i < window_start || i >= window_start + window_length)
+            {
+                if (shownButtons.ContainsKey(i))
+                {
+                    buttonPool.ReturnButton(shownButtons[i]);
+                    shownButtons.Remove(i);
+                }
+            }
+        }
 
+        for (int i = window_start; i < window_start + window_length; i ++)
+        {
+            if (!shownButtons.ContainsKey(i))
+            {
+                BeatButton button = buttonPool.BorrowButton(i);
+                ShowButton(button);
+                shownButtons.Add(i, button);
+            }
+        }
     }
 
     public void Load()
