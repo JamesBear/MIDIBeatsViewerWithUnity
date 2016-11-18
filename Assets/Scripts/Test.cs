@@ -6,18 +6,7 @@ using System.Collections.Generic;
 
 public class Test : MonoBehaviour {
 
-    class Beat
-    {
-        public NoteOnEvent _event;
-        public int trackIndex;
-        public int Time
-        {
-            get
-            {
-                return (int)_event.AbsoluteTime;
-            }
-        }
-    }
+
 
     public Text console;
     public RectTransform grid;
@@ -28,6 +17,8 @@ public class Test : MonoBehaviour {
     private float musicLength = 1f;
     MidiFile midiFile;
     List<Beat> beats = new List<Beat>();
+    float tickToPixelRatio = 1f;
+    
     
 
 	// Use this for initialization
@@ -96,12 +87,19 @@ public class Test : MonoBehaviour {
 
     void SetupUI()
     {
+        tickToPixelRatio = 1f;
         var size = grid.sizeDelta;
-        size.x = beats[beats.Count - 1].Time;
+        size.x = beats[beats.Count - 1].Time / tickToPixelRatio;
         grid.sizeDelta = size;
         scrollBar.value = 0;
+        ShowButtons(scrollBar.value);
 
-        
+        grid.parent.GetComponent<RectTransform>();
+    }
+
+    void ShowButtons(float scrollBarValue)
+    {
+
     }
 
     public void Load()
