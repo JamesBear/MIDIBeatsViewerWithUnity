@@ -17,4 +17,9 @@ public class BeatButton : MonoBehaviour {
 	void Update () {
 	
 	}
+
+    public void OnClickButton()
+    {
+        GameObject.Find("Game").GetComponent<Test>().OnClickButton(this);
+    }
 }

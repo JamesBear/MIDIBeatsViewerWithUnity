@@ -11,7 +11,13 @@ public class Test : MonoBehaviour {
     public Text console;
     public RectTransform grid;
     public RectTransform buttonPrefab;
+    public RectTransform cursor;
     public Scrollbar scrollBar;
+    public AudioClip audioClip;
+    public List<bool> trackEnabled;
+    public Scrollbar musicScrollBar;
+    public bool PauseOrPlay;
+    
 
     float ticksPerSecond = 1f;
     private float musicLength = 1f;
@@ -22,6 +28,10 @@ public class Test : MonoBehaviour {
     Dictionary<int, BeatButton> shownButtons;
     int shownStart;
     int shownCount;
+    int selectedButton = -1;
+    Color defaultColor = new Color(161f / 255, 163f / 255, 0f);
+    AudioSource audioSource;
+    
 
 	// Use this for initialization
 	void Start () {
@@ -30,8 +40,7 @@ public class Test : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-        if (buttonPool != null)
-            ShowButtons(scrollBar.value);
+        UpdateUI();
 	}
 
     string AskForFileName()
@@ -39,9 +48,49 @@ public class Test : MonoBehaviour {
         return @"D:\downloads\LovetheWayYouLie.mid";
     }
 
+    void UpdateUI()
+    {
+        if (buttonPool != null)
+        {
+            ShowButtons(scrollBar.value);
+            ShowCursor();
+        }
+        if (PauseOrPlay)
+        {
+            PauseOrPlay = false;
+            PauseUnpause();
+        }
+    }
+
+    void ShowCursor()
+    {
+        if (audioSource != null)
+        {
+            float ticks = audioSource.time* ticksPerSecond;
+            float pixel = ticks / tickToPixelRatio;
+            var pos = cursor.anchoredPosition3D;
+            pos.x = pixel;
+            cursor.anchoredPosition3D = pos;
+
+            if (!audioSource.isPlaying)
+            {
+                return;
+            }
+
+            float shownLength = grid.transform.parent.GetComponent<RectTransform>().sizeDelta.x * tickToPixelRatio;
+            float shownBegin = (grid.sizeDelta.x - shownLength) * scrollBar.value * tickToPixelRatio;
+
+            if (pos.x < shownBegin || pos.x > shownLength + shownBegin)
+            {
+                scrollBar.value = pos.x / (grid.sizeDelta.x - shownLength) / tickToPixelRatio;
+            }
+        }
+    }
+
     void LoadMidiFile(string fileName)
     {
         MidiFile mf = new MidiFile(fileName);
+        midiFile = mf;
         long highestTick = -1;
         int bpm = 120;
         int tempo_count = 0;
@@ -81,6 +130,7 @@ public class Test : MonoBehaviour {
         ticksPerSecond = bpm * mf.DeltaTicksPerQuarterNote / 60f;
         musicLength = highestTick / ticksPerSecond;
 
+
         Debug.Log(string.Format("music length = {0}, bpm = {1}", musicLength, bpm));
         beats.Sort((a, b) => a._event.AbsoluteTime.CompareTo(b._event.AbsoluteTime));
         Debug.Log(string.Format("beat count = {0}, last beat time = {1}, last beat = {2}", 
@@ -88,18 +138,35 @@ public class Test : MonoBehaviour {
             beats[beats.Count - 1]._event));
     }
 
+    void PlayClip(AudioClip clip)
+    {
+        if (audioSource == null)
+        {
+            GameObject go = new GameObject("AudioPlayer");
+            audioSource = go.AddComponent<AudioSource>();
+            audioSource.clip = clip;
+            audioSource.Play();
+        }
+    }
+
     void SetupUI()
     {
+        trackEnabled = new List<bool>();
+        for (int i = 0; i < midiFile.Tracks; i++)
+        {
+            trackEnabled.Add(true);
+        }
         shownButtons = new Dictionary<int, BeatButton>();
         buttonPool = new ButtonPool(buttonPrefab);
         tickToPixelRatio = 1f;
         var size = grid.sizeDelta;
         size.x = beats[beats.Count - 1].Time / tickToPixelRatio;
         grid.sizeDelta = size;
-        scrollBar.value = 0;
         ShowButtons(scrollBar.value);
+        scrollBar.value = 0;
 
         grid.parent.GetComponent<RectTransform>();
+        musicScrollBar.size = 0.01f;
     }
 
     void GetShowWindow(float scrollBarValue, out int window_start, out int window_length)
@@ -151,6 +218,13 @@ public class Test : MonoBehaviour {
         trans.anchoredPosition3D = pos;
         trans.sizeDelta = size;
         trans.gameObject.SetActive(true);
+
+        if (button.beatIndex == selectedButton)
+            button.GetComponent<Image>().color = Color.white;
+        else
+            button.GetComponent<Image>().color = defaultColor;
+
+        button.gameObject.SetActive(trackEnabled[beats[button.beatIndex].trackIndex]);
     }
 
     void ShowButtons(float scrollBarValue)
@@ -171,12 +245,18 @@ public class Test : MonoBehaviour {
 
         for (int i = window_start; i < window_start + window_length; i ++)
         {
+            BeatButton button;
             if (!shownButtons.ContainsKey(i))
             {
-                BeatButton button = buttonPool.BorrowButton(i);
-                ShowButton(button);
+                button = buttonPool.BorrowButton(i);
                 shownButtons.Add(i, button);
             }
+            else
+            {
+                button = shownButtons[i];
+            }
+
+            ShowButton(button);
         }
 
         shownStart = window_start;
@@ -191,5 +271,44 @@ public class Test : MonoBehaviour {
         string fileName = AskForFileName();
         LoadMidiFile(fileName);
         SetupUI();
+        PlayClip(audioClip);
+    }
+
+    public void OnClickButton(BeatButton button)
+    {
+        if (selectedButton != -1 && shownButtons.ContainsKey(selectedButton))
+        {
+            shownButtons[selectedButton].GetComponent<Image>().color = defaultColor;
+        }
+
+        selectedButton = button.beatIndex;
+        button.GetComponent<Image>().color = Color.white;
+        var beat = beats[button.beatIndex];
+        Debug.Log(string.Format("ticks = {0}, time = {1}", beat.Time, beat.Time / ticksPerSecond));
+    }
+
+    public void OnMusicProgressBarChanged()
+    {
+        audioSource.time = musicScrollBar.value * musicLength;
+    }
+
+    public void PauseUnpause()
+    {
+        if (audioSource)
+        {
+            if (audioSource.isPlaying)
+                audioSource.Pause();
+            else
+                audioSource.UnPause();
+        }
+    }
+
+    public void Stop()
+    {
+        if (audioSource)
+        {
+            audioSource.Pause();
+            audioSource.time = 0;
+        }
     }
 }

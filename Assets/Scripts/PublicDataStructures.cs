@@ -34,7 +34,8 @@ public class ButtonPool
     {
         var go = GameObject.Instantiate(template.gameObject) as GameObject;
         var rectTrans = go.GetComponent<RectTransform>();
-        rectTrans.position = template.position;
+        rectTrans.transform.SetParent(GameObject.Find("Game").GetComponent<Test>().grid);
+        rectTrans.anchoredPosition3D = template.anchoredPosition3D;
         rectTrans.sizeDelta = template.sizeDelta;
         go.SetActive(false);
 
