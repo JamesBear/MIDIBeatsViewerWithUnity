@@ -110,7 +110,7 @@ public class Test : MonoBehaviour {
         
         float shownLength = grid.transform.parent.GetComponent<RectTransform>().sizeDelta.x * tickToPixelRatio;
         float shownBegin = (grid.sizeDelta.x - shownLength) * scrollBarValue * tickToPixelRatio;
-        Debug.Log(string.Format("shownLength = {0}, grid.sizeDelta.x = {1}, showBegin = {2}", shownLength, grid.sizeDelta.x, shownBegin));
+        //Debug.Log(string.Format("shownLength = {0}, grid.sizeDelta.x = {1}, showBegin = {2}", shownLength, grid.sizeDelta.x, shownBegin));
         
         for (int i = 0; i < beats.Count; i ++)
         {
@@ -125,7 +125,8 @@ public class Test : MonoBehaviour {
             }
         }
 
-        Debug.Log(string.Format("window start = {0}, window length = {1}", window_start, window_length));
+        //Debug.Log(string.Format("window start = {0}, window length = {1}, shown_start = {2}, shown_count = {3}", 
+        //    window_start, window_length, shownStart, shownCount));
     }
 
     int Min(int a, int b)
@@ -139,13 +140,15 @@ public class Test : MonoBehaviour {
 
     void ShowButton(BeatButton button)
     {
-        button.transform.parent = grid.transform.parent;
+        button.GetComponent<RectTransform>().SetParent(grid);
+        //button.transform.parent = grid.transform.parent;
         var beat = beats[button.beatIndex];
         var trans = button.GetComponent<RectTransform>();
-        var pos = buttonPrefab.position;
+        var pos = buttonPrefab.anchoredPosition3D;
         var size = buttonPrefab.sizeDelta;
         pos.x = beat.Time / tickToPixelRatio;
-        trans.position = pos;
+        
+        trans.anchoredPosition3D = pos;
         trans.sizeDelta = size;
         trans.gameObject.SetActive(true);
     }
@@ -154,7 +157,7 @@ public class Test : MonoBehaviour {
     {
         int window_start, window_length;
         GetShowWindow(scrollBarValue, out window_start, out window_length);
-        for (int i = Min(shownStart, window_start); i < Max(shownStart+shownCount, window_start+window_length); i ++ )
+        for (int i = shownStart; i < shownStart+shownCount; i ++ )
         {
             if (i < window_start || i >= window_start + window_length)
             {
@@ -175,6 +178,9 @@ public class Test : MonoBehaviour {
                 shownButtons.Add(i, button);
             }
         }
+
+        shownStart = window_start;
+        shownCount = window_length;
     }
 
     public void Load()

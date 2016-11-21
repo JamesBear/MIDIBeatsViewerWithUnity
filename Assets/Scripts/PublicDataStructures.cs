@@ -18,7 +18,7 @@ public class Beat
 
 public class ButtonPool
 {
-    const int MAX_BUTTONS = 1000;
+    const int MAX_BUTTONS = 2000;
     int steps;
     List<BeatButton> buttons;
     RectTransform template;
@@ -38,7 +38,10 @@ public class ButtonPool
         rectTrans.sizeDelta = template.sizeDelta;
         go.SetActive(false);
 
-        return go.GetComponent<BeatButton>();
+        var beatButton = go.GetComponent<BeatButton>();
+        beatButton.beatIndex = -1;
+
+        return beatButton;
     }
 
     BeatButton AddButtons(int count)
@@ -78,9 +81,25 @@ public class ButtonPool
         return newButton;
     }
 
+    int FreeButtons()
+    {
+        int count = 0;
+        for (int i = 0; i < buttons.Count; i ++)
+        {
+            var button = buttons[i];
+            if (button.beatIndex == -1)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
     public void ReturnButton(BeatButton button)
     {
         button.beatIndex = -1;
         button.gameObject.SetActive(false);
+        //Debug.Log(string.Format("free buttons = {0}, buttons = {1}", FreeButtons(), buttons.Count));
     }
 }
