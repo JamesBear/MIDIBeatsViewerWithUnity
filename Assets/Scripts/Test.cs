@@ -14,7 +14,7 @@ public class Test : MonoBehaviour {
     public RectTransform cursor;
     public Scrollbar scrollBar;
     public List<bool> trackEnabled;
-    public Scrollbar musicScrollBar;
+    public Slider musicSlider;
     public bool PauseOrPlay;
     
 
@@ -80,6 +80,9 @@ public class Test : MonoBehaviour {
     {
         if (audioSource != null)
         {
+            if (audioSource.time < musicLength)
+                musicSlider.value = audioSource.time;
+
             float ticks = audioSource.time* ticksPerSecond;
             float pixel = ticks / tickToPixelRatio;
             var pos = cursor.anchoredPosition3D;
@@ -180,9 +183,9 @@ public class Test : MonoBehaviour {
         scrollBar.value = 0;
 
         grid.parent.GetComponent<RectTransform>();
-        musicScrollBar.size = 0.01f;
-
-        
+        musicSlider.maxValue = musicLength;
+        musicSlider.minValue = 0;
+        musicSlider.value = 0;
     }
 
     void GetShowWindow(float scrollBarValue, out int window_start, out int window_length)
@@ -305,7 +308,8 @@ public class Test : MonoBehaviour {
 
     public void OnMusicProgressBarChanged()
     {
-        audioSource.time = musicScrollBar.value * musicLength;
+        if (Mathf.Abs(audioSource.time - musicSlider.value) > 0.5)
+            audioSource.time = musicSlider.value;
     }
 
     public void PauseUnpause()
