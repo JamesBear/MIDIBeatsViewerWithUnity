@@ -14,6 +14,8 @@ public class Beat
             return (int)_event.AbsoluteTime;
         }
     }
+    // 0 ~ 8: none, left, up, right, down, left-air, up-air, right-air, down-air
+    public int beatType;
 }
 
 public class ButtonPool

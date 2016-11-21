@@ -40,12 +40,27 @@ public class Test : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+        UpdateInput();
         UpdateUI();
-	}
+    }
 
     string AskForFileName()
     {
         return @"D:\downloads\LovetheWayYouLie.mid";
+    }
+
+    void UpdateInput()
+    {
+        if (Input.GetKeyUp(KeyCode.LeftArrow))
+        {
+            if (selectedButton > 0)
+                selectedButton--;
+        }
+        if (Input.GetKeyUp(KeyCode.RightArrow))
+        {
+            if (selectedButton < beats.Count - 1)
+                selectedButton++;
+        }
     }
 
     void UpdateUI()
