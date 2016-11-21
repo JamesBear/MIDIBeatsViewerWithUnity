@@ -182,6 +182,8 @@ public class Test : MonoBehaviour {
 
         grid.parent.GetComponent<RectTransform>();
         musicScrollBar.size = 0.01f;
+
+        
     }
 
     void GetShowWindow(float scrollBarValue, out int window_start, out int window_length)
