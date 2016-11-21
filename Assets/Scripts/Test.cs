@@ -13,7 +13,6 @@ public class Test : MonoBehaviour {
     public RectTransform buttonPrefab;
     public RectTransform cursor;
     public Scrollbar scrollBar;
-    public AudioClip audioClip;
     public List<bool> trackEnabled;
     public Scrollbar musicScrollBar;
     public bool PauseOrPlay;
@@ -288,7 +287,7 @@ public class Test : MonoBehaviour {
         string fileName = AskForFileName();
         LoadMidiFile(fileName);
         SetupUI();
-        PlayClip(audioClip);
+        StartCoroutine(StartAudio(GetOggPath(fileName)));
     }
 
     public void OnClickButton(BeatButton button)
@@ -327,5 +326,24 @@ public class Test : MonoBehaviour {
             audioSource.Pause();
             audioSource.time = 0;
         }
+    }
+
+    string GetOggPath(string midi_path)
+    {
+        if (midi_path.Length > 4)
+            midi_path = midi_path.Substring(0, midi_path.Length - 4);
+        
+        return midi_path + ".ogg";
+    }
+
+    IEnumerator StartAudio(string audioFilePath)
+    {
+        WWW audioLoader = new WWW("file://" + audioFilePath);
+        while (!audioLoader.isDone)
+            yield return null;
+
+        var clip = audioLoader.GetAudioClip(false);
+        Debug.Log("Finish loading: " + audioFilePath);
+        PlayClip(clip);
     }
 }
