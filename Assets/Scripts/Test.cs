@@ -32,6 +32,7 @@ public class Test : MonoBehaviour {
     int selectedButton = -1;
     Color defaultColor = new Color(161f / 255, 163f / 255, 0f);
     AudioSource audioSource;
+    bool autoNextPage = true;
     
 
 	// Use this for initialization
@@ -91,7 +92,7 @@ public class Test : MonoBehaviour {
             pos.x = pixel;
             cursor.anchoredPosition3D = pos;
 
-            if (!audioSource.isPlaying)
+            if (!audioSource.isPlaying || !autoNextPage)
             {
                 return;
             }
@@ -373,5 +374,10 @@ public class Test : MonoBehaviour {
             int trackID = int.Parse(checkBoxName.Substring(5));
             trackEnabled[trackID] = newValue;
         }
+    }
+
+    public void OnCheckAutoNextPage(Toggle toggle)
+    {
+        autoNextPage = toggle.isOn;
     }
 }
