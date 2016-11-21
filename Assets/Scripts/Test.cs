@@ -16,6 +16,8 @@ public class Test : MonoBehaviour {
     public List<bool> trackEnabled;
     public Slider musicSlider;
     public bool PauseOrPlay;
+    public RectTransform togglePrefab;
+    public RectTransform tracksEnabledRoot;
     
 
     float ticksPerSecond = 1f;
@@ -166,6 +168,18 @@ public class Test : MonoBehaviour {
         }
     }
 
+    void InitializeTracksEnabled()
+    {
+        for (int i = 0; i < trackEnabled.Count; i ++)
+        {
+            var go = Instantiate(togglePrefab.gameObject, tracksEnabledRoot) as GameObject;
+            go.name = "track" + i;
+            var toggle = go.GetComponent<Toggle>();
+            toggle.isOn = trackEnabled[i];
+            toggle.GetComponentInChildren<Text>().text = i.ToString();
+        }
+    }
+
     void SetupUI()
     {
         trackEnabled = new List<bool>();
@@ -173,6 +187,7 @@ public class Test : MonoBehaviour {
         {
             trackEnabled.Add(true);
         }
+        InitializeTracksEnabled();
         shownButtons = new Dictionary<int, BeatButton>();
         buttonPool = new ButtonPool(buttonPrefab);
         tickToPixelRatio = 1f;
@@ -349,5 +364,14 @@ public class Test : MonoBehaviour {
         var clip = audioLoader.GetAudioClip(false);
         Debug.Log("Finish loading: " + audioFilePath);
         PlayClip(clip);
+    }
+
+    public void CheckBoxClicked(string checkBoxName, bool newValue)
+    {
+        if (checkBoxName.StartsWith("track"))
+        {
+            int trackID = int.Parse(checkBoxName.Substring(5));
+            trackEnabled[trackID] = newValue;
+        }
     }
 }
