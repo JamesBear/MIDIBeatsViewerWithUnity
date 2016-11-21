@@ -178,7 +178,7 @@ public class Test : MonoBehaviour {
     }
 
     public void Load()
-    {
+    { 
         Debug.Log("test load");
         //MidiFile mf = new MidiFile(@"D:\downloads\LovetheWayYouLie.mid");
         //AudioFileInspector.MidiFileInspector mf = new AudioFileInspector.MidiFileInspector();
