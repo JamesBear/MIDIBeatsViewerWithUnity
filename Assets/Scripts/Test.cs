@@ -60,6 +60,14 @@ public class Test : MonoBehaviour {
 
     string AskForFileName()
     {
+        if (File.Exists("test.txt"))
+        {
+            string str = File.ReadAllText("test.txt").Trim();
+            Debug.Log("Loaded path from test.txt: " + str);
+            return str;
+        }
+
+        Debug.LogError("Can't find test.txt, using default path: " + @"D:\downloads\LovetheWayYouLie.mid");
         return @"D:\downloads\LovetheWayYouLie.mid";
     }
 
