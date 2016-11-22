@@ -3,6 +3,8 @@ using System.Collections;
 using NAudio.Midi;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using System.Text;
+using System.IO;
 
 public class Test : MonoBehaviour {
 
@@ -18,6 +20,8 @@ public class Test : MonoBehaviour {
     public bool PauseOrPlay;
     public RectTransform togglePrefab;
     public RectTransform tracksEnabledRoot;
+    public Text timeLabelMidi;
+    public Text timeLabelOgg;
     
 
     float ticksPerSecond = 1f;
@@ -25,6 +29,7 @@ public class Test : MonoBehaviour {
     MidiFile midiFile;
     List<Beat> beats = new List<Beat>();
     float tickToPixelRatio = 1f;
+    int bpm;
     ButtonPool buttonPool;
     Dictionary<int, BeatButton> shownButtons;
     int shownStart;
@@ -33,6 +38,7 @@ public class Test : MonoBehaviour {
     Color defaultColor = new Color(161f / 255, 163f / 255, 0f);
     Color beatColor = Color.green;
     AudioSource audioSource;
+    string fileName;
     bool autoNextPage = true;
     List<BeatTypeInput> beatInputs = new List<BeatTypeInput> { new BeatTypeInput(KeyCode.A, KeyCode.LeftShift, 5, "_A"),
         new BeatTypeInput(KeyCode.W, KeyCode.LeftShift, 6, "_W"), new BeatTypeInput(KeyCode.D, KeyCode.LeftShift, 7, "_D"),
@@ -93,17 +99,44 @@ public class Test : MonoBehaviour {
         }
     }
 
+
     void UpdateUI()
     {
         if (buttonPool != null)
         {
             ShowButtons(scrollBar.value);
             ShowCursor();
+            ShowTimeLabel();
         }
         if (PauseOrPlay)
         {
             PauseOrPlay = false;
             PauseUnpause();
+        }
+    }
+
+    string FormatSeconds(float seconds)
+    {
+        int secs = (int)seconds;
+        int mins = secs / 60;
+        secs = secs % 60;
+
+        return mins + ":" + secs;
+    }
+
+    void ShowTimeLabel()
+    {
+        if (audioSource != null)
+        {
+            float playTime = audioSource.time;
+            float audioLength = audioSource.clip.length;
+            string ogg_time = FormatSeconds(playTime) + "/" + FormatSeconds(audioLength);
+            timeLabelOgg.text = ogg_time;
+
+            float midi_play_time = playTime;
+            float midiLength = musicLength;
+            string midi_time = FormatSeconds(midi_play_time) + "/" + FormatSeconds(midiLength);
+            timeLabelMidi.text = midi_time;
         }
     }
 
@@ -140,7 +173,7 @@ public class Test : MonoBehaviour {
         MidiFile mf = new MidiFile(fileName);
         midiFile = mf;
         long highestTick = -1;
-        int bpm = 120;
+        bpm = 120;
         int tempo_count = 0;
         beats.Clear();
         
@@ -157,7 +190,12 @@ public class Test : MonoBehaviour {
                     {
                         tempo_count++;
                         if (tempo_count <= 1)
+                        {
                             bpm = (60000000 / ((TempoEvent)eve).MicrosecondsPerQuarterNote);
+
+                            // calculate ticks per second!
+                            ticksPerSecond = bpm * mf.DeltaTicksPerQuarterNote / 60f;
+                        }
                         else
                         {
                             Debug.LogError("BPM has changed twice!");
@@ -169,14 +207,16 @@ public class Test : MonoBehaviour {
                     NoteOnEvent noteOnEvent = eve as NoteOnEvent;
                     Beat beat = new Beat();
                     beat._event = noteOnEvent;
+                    beat.Time = (int)noteOnEvent.AbsoluteTime;
                     beat.trackIndex = i;
+                    beat.beatIndex = beats.Count;
+                    beat.estimatedTime = beat.Time / ticksPerSecond;
                     beats.Add(beat);
                 }
             }
         }
-
-        ticksPerSecond = bpm * mf.DeltaTicksPerQuarterNote / 60f;
         musicLength = highestTick / ticksPerSecond;
+
 
 
         Debug.Log(string.Format("music length = {0}, bpm = {1}", musicLength, bpm));
@@ -335,10 +375,11 @@ public class Test : MonoBehaviour {
         Debug.Log("test load");
         //MidiFile mf = new MidiFile(@"D:\downloads\LovetheWayYouLie.mid");
         //AudioFileInspector.MidiFileInspector mf = new AudioFileInspector.MidiFileInspector();
-        string fileName = AskForFileName();
+        fileName = AskForFileName();
         LoadMidiFile(fileName);
         SetupUI();
-        StartCoroutine(StartAudio(GetOggPath(fileName)));
+        LoadConfigFile();
+        StartCoroutine(StartAudio(GetRelatedPath(fileName, ".ogg")));
     }
 
     public void OnClickButton(BeatButton button)
@@ -367,7 +408,9 @@ public class Test : MonoBehaviour {
             if (audioSource.isPlaying)
                 audioSource.Pause();
             else
-                audioSource.UnPause();
+            {
+                audioSource.Play();
+            }
         }
     }
 
@@ -380,12 +423,12 @@ public class Test : MonoBehaviour {
         }
     }
 
-    string GetOggPath(string midi_path)
+    string GetRelatedPath(string midi_path, string newExtension)
     {
         if (midi_path.Length > 4)
             midi_path = midi_path.Substring(0, midi_path.Length - 4);
         
-        return midi_path + ".ogg";
+        return midi_path + newExtension;
     }
 
     IEnumerator StartAudio(string audioFilePath)
@@ -411,5 +454,60 @@ public class Test : MonoBehaviour {
     public void OnCheckAutoNextPage(Toggle toggle)
     {
         autoNextPage = toggle.isOn;
+    }
+
+    void LoadConfigFile()
+    {
+        string configPath = GetRelatedPath(fileName, ".txt");
+        if (File.Exists(configPath))
+        {
+            string content = File.ReadAllText(configPath);
+            ConfigObject configObj = new ConfigObject();
+            configObj.LoadFromString(content);
+            LoadFromConfigObject(configObj);
+
+            Debug.Log("Successfully loaded config: " + configPath);
+        }
+        else
+            Debug.Log("Config file doesn't exist:" + configPath);
+    }
+
+    public void SaveConfigFile()
+    {
+        string configPath = GetRelatedPath(fileName, ".txt");
+
+        ConfigObject configObj = ToConfigObject();
+        string content = configObj.ToString();
+        File.WriteAllText(configPath, content);
+        Debug.Log("Successfully written config to " + configPath);
+    }
+
+    public ConfigObject ToConfigObject()
+    {
+        ConfigObject configObj = new ConfigObject();
+        configObj.beats = beats;
+        configObj.bpm = bpm;
+        configObj.deltaTicksPerQuarterNote = midiFile.DeltaTicksPerQuarterNote;
+        configObj.ticksPerSecond = ticksPerSecond;
+        configObj.trackEnabled = trackEnabled;
+
+        return configObj;
+    }
+
+    public void LoadFromConfigObject(ConfigObject configObj)
+    {
+        trackEnabled = configObj.trackEnabled;
+        foreach (var beat in configObj.beats)
+        {
+            var myBeat = beats[beat.beatIndex];
+            if (beat.Time != myBeat.Time)
+            {
+                Debug.LogError(string.Format("Load beat error: index = {0}, myTime = {1}, theirTime = {2}", 
+                    beat.beatIndex, myBeat.Time, beat.Time));
+                continue;
+            }
+            myBeat.beatType = beat.beatType;
+            myBeat.beatName = beat.beatName;
+        }
     }
 }
