@@ -16,6 +16,7 @@ public class Beat
     }
     // 0 ~ 8: none, left, up, right, down, left-air, up-air, right-air, down-air
     public int beatType;
+    public string beatName;
 }
 
 public class ButtonPool
@@ -104,5 +105,37 @@ public class ButtonPool
         button.beatIndex = -1;
         button.gameObject.SetActive(false);
         //Debug.Log(string.Format("free buttons = {0}, buttons = {1}", FreeButtons(), buttons.Count));
+    }
+}
+
+public class BeatTypeInput
+{
+    public KeyCode pressedKey;
+    public KeyCode holdKey;
+    public int beatType;
+    public string displayName;
+
+    public BeatTypeInput(KeyCode _pressed, KeyCode _hold, int _beatType, string _name)
+    {
+        pressedKey = _pressed;
+        holdKey = _hold;
+        beatType = _beatType;
+        displayName = _name;
+    }
+
+    public bool TryGetInputBeatType(out int _beatType, out string _name)
+    {
+        _beatType = 0;
+        _name = "";
+        if (Input.GetKeyUp(pressedKey))
+        {
+            if (holdKey == KeyCode.None || Input.GetKey(holdKey))
+            {
+                _beatType = beatType;
+                _name = displayName;
+                return true;
+            }
+        }
+        return false;
     }
 }

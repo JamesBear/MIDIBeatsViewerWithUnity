@@ -31,12 +31,18 @@ public class Test : MonoBehaviour {
     int shownCount;
     int selectedButton = -1;
     Color defaultColor = new Color(161f / 255, 163f / 255, 0f);
+    Color beatColor = Color.green;
     AudioSource audioSource;
     bool autoNextPage = true;
-    
+    List<BeatTypeInput> beatInputs = new List<BeatTypeInput> { new BeatTypeInput(KeyCode.A, KeyCode.LeftShift, 5, "_A"),
+        new BeatTypeInput(KeyCode.W, KeyCode.LeftShift, 6, "_W"), new BeatTypeInput(KeyCode.D, KeyCode.LeftShift, 7, "_D"),
+        new BeatTypeInput(KeyCode.S, KeyCode.LeftShift, 8, "_S"), new BeatTypeInput(KeyCode.A, KeyCode.None, 1, "a"),
+        new BeatTypeInput(KeyCode.W, KeyCode.None, 2, "w"), new BeatTypeInput(KeyCode.D, KeyCode.None, 3, "d"),
+        new BeatTypeInput(KeyCode.S, KeyCode.None, 4, "s"), new BeatTypeInput(KeyCode.Backspace, KeyCode.None, 0, "")};
 
-	// Use this for initialization
-	void Start () {
+
+    // Use this for initialization
+    void Start () {
 
 	}
 	
@@ -62,6 +68,28 @@ public class Test : MonoBehaviour {
         {
             if (selectedButton < beats.Count - 1)
                 selectedButton++;
+        }
+
+        foreach (var beatInput in beatInputs)
+        {
+            int beatType;
+            string _name;
+            if (beatInput.TryGetInputBeatType(out beatType, out _name))
+            {
+                ProcessBeatInput(beatType, _name);
+                break;
+            }
+        }
+    }
+
+    void ProcessBeatInput(int beatType, string beatName)
+    {
+        if (shownButtons.ContainsKey(selectedButton))
+        {
+            BeatButton beatButton = shownButtons[selectedButton];
+            Beat beat = beats[beatButton.beatIndex];
+            beat.beatType = beatType;
+            beat.beatName = beatName;
         }
     }
 
@@ -254,10 +282,14 @@ public class Test : MonoBehaviour {
         trans.sizeDelta = size;
         trans.gameObject.SetActive(true);
 
+        button.GetComponentInChildren<Text>().text = beat.beatName;
+
         if (button.beatIndex == selectedButton)
             button.GetComponent<Image>().color = Color.white;
-        else
+        else if (beat.beatType == 0)
             button.GetComponent<Image>().color = defaultColor;
+        else
+            button.GetComponent<Image>().color = beatColor;
 
         button.gameObject.SetActive(trackEnabled[beats[button.beatIndex].trackIndex]);
     }
@@ -311,10 +343,10 @@ public class Test : MonoBehaviour {
 
     public void OnClickButton(BeatButton button)
     {
-        if (selectedButton != -1 && shownButtons.ContainsKey(selectedButton))
-        {
-            shownButtons[selectedButton].GetComponent<Image>().color = defaultColor;
-        }
+        //if (selectedButton != -1 && shownButtons.ContainsKey(selectedButton))
+        //{
+        //    shownButtons[selectedButton].GetComponent<Image>().color = defaultColor;
+        //}
 
         selectedButton = button.beatIndex;
         button.GetComponent<Image>().color = Color.white;
