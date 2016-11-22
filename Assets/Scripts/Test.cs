@@ -115,6 +115,18 @@ public class Test : MonoBehaviour {
         }
     }
 
+    void ShowTrackToggles()
+    {
+        for (int i = 0; i < trackEnabled.Count; i ++)
+        {
+            var child = tracksEnabledRoot.FindChild("track" + i);
+            if (child != null)
+            {
+                child.GetComponent<Toggle>().isOn = trackEnabled[i];
+            }
+        }
+    }
+
     string FormatSeconds(float seconds)
     {
         int secs = (int)seconds;
@@ -209,7 +221,6 @@ public class Test : MonoBehaviour {
                     beat._event = noteOnEvent;
                     beat.Time = (int)noteOnEvent.AbsoluteTime;
                     beat.trackIndex = i;
-                    beat.beatIndex = beats.Count;
                     beat.estimatedTime = beat.Time / ticksPerSecond;
                     beats.Add(beat);
                 }
@@ -221,9 +232,18 @@ public class Test : MonoBehaviour {
 
         Debug.Log(string.Format("music length = {0}, bpm = {1}", musicLength, bpm));
         beats.Sort((a, b) => a._event.AbsoluteTime.CompareTo(b._event.AbsoluteTime));
+        SetBeatIndexes();
         Debug.Log(string.Format("beat count = {0}, last beat time = {1}, last beat = {2}", 
             beats.Count, beats[beats.Count-1]._event.AbsoluteTime / ticksPerSecond,
             beats[beats.Count - 1]._event));
+    }
+
+    void SetBeatIndexes()
+    {
+        for (int i = 0;i < beats.Count; i ++)
+        {
+            beats[i].beatIndex = i;
+        }
     }
 
     void PlayClip(AudioClip clip)
@@ -509,5 +529,7 @@ public class Test : MonoBehaviour {
             myBeat.beatType = beat.beatType;
             myBeat.beatName = beat.beatName;
         }
+
+        ShowTrackToggles();
     }
 }
